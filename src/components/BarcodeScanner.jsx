@@ -1,7 +1,6 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import ReactDOM from 'react-dom';
-import { useZxing as Zxing } from 'react-zxing';
 import { BarcodeFormat, BrowserMultiFormatReader } from '@zxing/library';
 import { motion } from 'framer-motion';
 import { X, Camera } from 'lucide-react';
@@ -14,19 +13,42 @@ const BarcodeScanner = ({ onScanSuccess, onClose }) => {
   const [result, setResult] = useState(null);
   const [videoDevice, setVideoDevice] = useState(null);
   const [openCamera, setOpenCamera] = useState(false);
+  // NUEVO: Referencia para mantener la instancia del lector
+  const readerRef = useRef(null);
 
   useEffect(() => {
+
+    let readerInstance = null;
+
     if (videoDevice) {
-      const reader = new BrowserMultiFormatReader();
-      reader.decodeFromVideoDevice(videoDevice.deviceId, 'video', (result) => {
+
+      // const reader = new BrowserMultiFormatReader();
+      readerInstance = new BrowserMultiFormatReader();
+
+      // Guarda la instancia en la referencia para poder limpiarla después
+      readerRef.current = readerInstance;
+
+      readerInstance.decodeFromVideoDevice(videoDevice.deviceId, 'video', (result) => {
         if (result) {
           setResult(result.text);
           onScanSuccess(result.text.trim());
           setOpenCamera(false);
           setVideoDevice(null);
+          readerInstance.reset();
         }
       });
     }
+
+    // FUNCIÓN DE LIMPIEZA: Se ejecuta cuando el componente se desmonta (cierra el modal)
+    return () => {
+      if (readerRef.current) {
+        // Detiene el stream y limpia los recursos del lector
+        readerRef.current.reset(); 
+        readerRef.current = null;
+        console.log("Cámara detenida y recursos liberados.");
+      }
+    };
+
   },[videoDevice]);
 
   const handleCameraClick = () => {
@@ -55,13 +77,22 @@ const BarcodeScanner = ({ onScanSuccess, onClose }) => {
     }
   };
 
+  const handleClose = () => {
+    // Si la cámara está abierta y el usuario cancela, resetea el lector
+    if (readerRef.current) {
+      readerRef.current.reset();
+      readerRef.current = null;
+    }
+    onClose();
+  };
+
   const modalContent = (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={onClose}
+      onClick={handleClose}
     >
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
@@ -75,7 +106,7 @@ const BarcodeScanner = ({ onScanSuccess, onClose }) => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={onClose}
+            onClick={handleClose}
             className="hover:bg-white/10"
           >
             <X className="w-5 h-5" />
