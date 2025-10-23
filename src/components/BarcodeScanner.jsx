@@ -23,6 +23,7 @@ const BarcodeScanner = ({ onScanSuccess, onClose }) => {
           setResult(result.text);
           onScanSuccess(result.text.trim());
           setOpenCamera(false);
+          setVideoDevice(null);
         }
       });
     }
@@ -34,6 +35,10 @@ const BarcodeScanner = ({ onScanSuccess, onClose }) => {
     async function init() {
       const videoDevice = await reader.listVideoInputDevices();
       if (videoDevice.length > 0) {
+        for (let index = 0; index < videoDevice.length; index++) {
+          alert(videoDevice[index].label);
+          
+        }
         setVideoDevice(videoDevice[0]);
       }
     }
