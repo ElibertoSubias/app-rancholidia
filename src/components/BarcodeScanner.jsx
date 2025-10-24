@@ -56,13 +56,18 @@ const BarcodeScanner = ({ onScanSuccess, onClose }) => {
     const reader = new BrowserMultiFormatReader();
     async function init() {
       const videoDevice = await reader.listVideoInputDevices();
-      if (videoDevice.length > 0) {
-        for (let index = 0; index < videoDevice.length; index++) {
-          alert(videoDevice[index].label);
-          
-        }
-        setVideoDevice(videoDevice[0]);
+
+      const rearCamera = videoDevice.find(d => 
+        d.label.toLowerCase().includes('back') || 
+        d.label.toLowerCase().includes('environment')
+      ) || devices[0];
+
+      if (rearCamera) {
+        setVideoDevice(rearCamera);
+      } else {
+        toast({ title: "Error", description: "No se encontró cámara de video.", variant: "destructive" });
       }
+
     }
     init();
   };

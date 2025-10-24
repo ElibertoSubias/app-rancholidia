@@ -15,11 +15,13 @@ const AnimalForm = ({ animal, onSave, onCancel }) => {
     edad: '',
     peso: '',
     fotografia: '',
+    imageBarCode: '',
     partos: '',
     produccionLeche: '',
     fechaNacimiento: ''
   });
   const [showCameraModal, setShowCameraModal] = useState(false); // NUEVO ESTADO
+  const [imageActive, setImageActive] = useState(null);
 
   useEffect(() => {
     if (animal) {
@@ -29,6 +31,7 @@ const AnimalForm = ({ animal, onSave, onCancel }) => {
         edad: animal.edad || '',
         peso: animal.peso || '',
         fotografia: animal.fotografia || '',
+        imageBarCode: animal.imageBarCode || '',
         partos: animal.partos || '',
         produccionLeche: animal.produccionLeche || '',
         fechaNacimiento: animal.fechaNacimiento || ''
@@ -43,6 +46,13 @@ const AnimalForm = ({ animal, onSave, onCancel }) => {
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
+    let value = "";
+
+    if (e.target.id == "file-upload-barcode") {
+      value = "file-upload-barcode";
+    } else {
+      value = "file-upload";
+    }
 
     if (file) {
       // 1. Verificar el tipo de archivo (opcional pero recomendado)
@@ -61,7 +71,12 @@ const AnimalForm = ({ animal, onSave, onCancel }) => {
       // 3. Definir qué hacer cuando la lectura del archivo termine
       reader.onloadend = () => {
         // El resultado es la cadena Base64
-        setFormData(prev => ({ ...prev, fotografia: reader.result }));
+        if (value === "file-upload") {
+          setFormData(prev => ({ ...prev, fotografia: reader.result }));
+        } else {
+          setFormData(prev => ({ ...prev, imageBarCode: reader.result }));
+        }
+        
         toast({
           title: "🖼️ Imagen cargada",
           description: "La imagen está lista para ser guardada como Base64.",
@@ -73,12 +88,18 @@ const AnimalForm = ({ animal, onSave, onCancel }) => {
     }
   };
 
-  const handlePhotoCapture = () => {
+  const handlePhotoCapture = (imageActiveFlag) => {
+    setImageActive(imageActiveFlag);
     setShowCameraModal(true);
   };
 
   const handleCaptureSuccess = (base64Image) => {
-    setFormData(prev => ({ ...prev, fotografia: base64Image }));
+    if (imageActive === "file-upload") {
+      setFormData(prev => ({ ...prev, fotografia: base64Image }));
+    } else {
+      setFormData(prev => ({ ...prev, imageBarCode: base64Image }));
+    }
+    
     setShowCameraModal(false);
     toast({
         title: "📸 Foto Capturada",
@@ -220,13 +241,6 @@ const AnimalForm = ({ animal, onSave, onCancel }) => {
           <div className="space-y-2">
             <Label className="text-purple-300">Fotografía</Label>
             <div className="flex gap-2">
-              {/* <Input
-                name="fotografia"
-                value={formData.fotografia}
-                onChange={handleChange}
-                className="bg-white/5 border-white/10 text-white flex-1"
-                placeholder="URL de la imagen"
-              /> */}
               {/* ---------------------------------------------------- */}
               {/* 1. INPUT FILE OCULTO */}
               {/* ---------------------------------------------------- */}
@@ -261,20 +275,64 @@ const AnimalForm = ({ animal, onSave, onCancel }) => {
               >
                 <Upload className="w-5 h-5" />
               </Button>
-              {/* <Button
-                type="button"
-                onClick={handlePhotoCapture}
-                variant="outline"
-                className="border-purple-500/50 hover:bg-purple-500/10"
-              >
-                <Camera className="w-5 h-5" />
-              </Button> */}
               {/* ---------------------------------------------------- */}
               {/* 4. BOTÓN DE CÁMARA (Llamada al Toast) */}
               {/* ---------------------------------------------------- */}
               <Button
                 type="button"
-                onClick={handlePhotoCapture}
+                onClick={() => handlePhotoCapture('file-upload')}
+                variant="outline"
+                className="border-purple-500/50 hover:bg-purple-500/10"
+                title="Usar cámara"
+              >
+                <Camera className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-purple-300">Código de Barras</Label>
+            <div className="flex gap-2">
+              {/* ---------------------------------------------------- */}
+              {/* 1. INPUT FILE OCULTO */}
+              {/* ---------------------------------------------------- */}
+              <input
+                type="file"
+                id="file-upload-barcode" // <- Usaremos este ID para enlazarlo al Label/Botón
+                accept="image/*" // <- Solo acepta archivos de imagen
+                onChange={handleImageUpload} // <- NUEVO HANDLER
+                className="hidden" // <- Ocultamos el input feo
+              />
+              {/* ---------------------------------------------------- */}
+              {/* 2. PREVISUALIZACIÓN DE NOMBRE DE ARCHIVO O BASE64 */}
+              {/* ---------------------------------------------------- */}
+              <Input
+                value={
+                  formData.imageBarCode 
+                    ? (formData.imageBarCode.length > 50 ? 'Imagen Base64 cargada' : formData.imageBarCode) 
+                    : 'Selecciona una imagen o pega un enlace'
+                }
+                readOnly // <- Hacemos que la entrada sea de solo lectura para mostrar el estado
+                className="bg-white/5 border-white/10 text-white flex-1 cursor-default"
+              />
+              {/* ---------------------------------------------------- */}
+              {/* 3. BOTÓN DE SUBIDA (Activa el input oculto) */}
+              {/* ---------------------------------------------------- */}
+              <Button
+                type="button"
+                onClick={() => document.getElementById('file-upload-barcode').click()} // <- CLIC
+                variant="outline"
+                className="border-purple-500/50 hover:bg-purple-500/10"
+                title="Subir archivo"
+              >
+                <Upload className="w-5 h-5" />
+              </Button>
+              {/* ---------------------------------------------------- */}
+              {/* 4. BOTÓN DE CÁMARA (Llamada al Toast) */}
+              {/* ---------------------------------------------------- */}
+              <Button
+                type="button"
+                onClick={() => handlePhotoCapture('file-upload-barcode')}
                 variant="outline"
                 className="border-purple-500/50 hover:bg-purple-500/10"
                 title="Usar cámara"
@@ -301,7 +359,20 @@ const AnimalForm = ({ animal, onSave, onCancel }) => {
             <img
               src={formData.fotografia}
               alt="Vista previa"
-              className="w-full h-98 object-cover"
+              className="w-full h-68 object-cover"
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
+            />
+          </div>
+        )}
+
+        {formData.imageBarCode && (
+          <div className="rounded-xl overflow-hidden border border-white/10">
+            <img
+              src={formData.imageBarCode}
+              alt="Vista previa"
+              className="w-full h-68 object-cover"
               onError={(e) => {
                 e.target.style.display = 'none';
               }}

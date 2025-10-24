@@ -8,7 +8,7 @@ const Header = () => {
     <motion.header
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className="glass-effect sticky top-0 border-b border-white/10"
+      className="glass-effect sticky top-0 z-50 border-b border-white/10"
     >
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center gap-3">
