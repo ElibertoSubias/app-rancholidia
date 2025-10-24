@@ -60,7 +60,7 @@ const BarcodeScanner = ({ onScanSuccess, onClose }) => {
       const rearCamera = videoDevice.find(d => 
         d.label.toLowerCase().includes('back') || 
         d.label.toLowerCase().includes('environment')
-      ) || devices[0];
+      ) || videoDevice[0];
 
       if (rearCamera) {
         setVideoDevice(rearCamera);
